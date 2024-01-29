@@ -4,7 +4,7 @@
   "metadata": {
     "colab": {
       "provenance": [],
-      "authorship_tag": "ABX9TyMaNjxxayGwcQevtF1L7lJx",
+      "authorship_tag": "ABX9TyNvFTrRo+BbXartPd9myAfK",
       "include_colab_link": true
     },
     "kernelspec": {
@@ -23,7 +23,7 @@
         "colab_type": "text"
       },
       "source": [
-        "<a href=\"https://colab.research.google.com/github/Rtniewi/kcwiertniewicz-IDS/blob/main/WaterJugPuzzle.ipynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+        "<a href=\"https://colab.research.google.com/github/Rtniewi/kcwiertniewicz-IDS/blob/main/AI/HW2\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
       ]
     },
     {
@@ -166,7 +166,7 @@
         "\n",
         "mcf = WaterJugPuzzle()\n",
         "\n",
-        "#print the initial state\n",
+        "#print the initial state (start state)\n",
         "mcf.print_state()\n",
         "\n",
         "print(\"-----------------\")\n",
@@ -195,7 +195,7 @@
         "mcf.print_state\n",
         "\n",
         "print('-----------------')\n",
-        "#Apply Rule 3 (STEP 6) and print the resulting state\n",
+        "#Apply Rule 3 (STEP 6) and print the resulting state (goal state)\n",
         "mcf.R3_five_jug_to_three_jug\n",
         "mcf.print_state\n",
         "\n"
