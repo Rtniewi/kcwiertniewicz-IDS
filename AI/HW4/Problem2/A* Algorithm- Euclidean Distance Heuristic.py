@@ -1,6 +1,6 @@
 #######################################################
 #### MazeGame uses a grid of rows X cols to demonstrate
-#### pathfinding using A*.
+#### pathfinding using A* and the Euclidean Distance Hueristic.
 ####Katrina Cwiertniewicz
 #### AI, Spring 2024
 #######################################################
