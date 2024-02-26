@@ -1,6 +1,6 @@
 #######################################################
 #### MazeGame uses a grid of rows X cols to demonstrate
-#### pathfinding using Greedy Best-First.
+#### pathfinding using Greedy Best-First and the Euclidean Distance Heuristic. 
 #### Katrina Cwiertniewicz
 #### AI, Spring 2024
 #######################################################
