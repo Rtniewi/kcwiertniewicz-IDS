@@ -87,7 +87,7 @@ class MazeGame:
     #### Euclidean Distance Heuristic
     ############################################################
     def heuristic(self, pos):
-        return sqrt((pos[0] - self.goal_pos[0]) ** 2 + (pos[1] - self.goal_pos[1]) ** 2)
+        return sqrt((pos[0] - self.goal_pos[0])**2) + (pos[1] - self.goal_pos[1])**2)
 
     ############################################################
     #### A* Algorithm
