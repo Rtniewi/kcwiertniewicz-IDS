@@ -122,7 +122,7 @@ class MazeGame:
                         ### Update the heurstic h()
                         self.cells[new_pos[0]][new_pos[1]].h = self.heuristic(new_pos)
 
-                        ### Update the evaluation function for the cell n: f(n) = (2* g(n)) + (3 * h(n)))
+                        ### Update the evaluation function for the cell n: f(n) = (2 * g(n)) + (3 * h(n)))
                         self.cells[new_pos[0]][new_pos[1]].f = (2 * new_g) + (3 * self.cells[new_pos[0]][new_pos[1]].h)
                         self.cells[new_pos[0]][new_pos[1]].parent = current_cell
 
