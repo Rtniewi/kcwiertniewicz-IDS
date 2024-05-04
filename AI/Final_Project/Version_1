@@ -1,0 +1,361 @@
+### Phu Do, Katrina Cwiertniewicz
+###CSC362
+###5/4/2024
+###Final Project: The purpose of this assignment is to use the A* algorithm to help a robot
+###nurse deliver medication, collect test samples, and function as a telemedicine interface.
+###Requests will return SUCCESS if all requests are completed or if some of the requests are not
+###completed due to obstacles or FAILURE if the robot is not able to complete any of its tasks.
+###This version shows each display grid separately. When exited, the robot processes the next delivery location.
+
+#######################################################
+#### Robot Nurse uses a grid-superimposed map of
+#### rows X cols to demonstrate pathfinding using A*.
+#######################################################
+import tkinter as tk
+from queue import PriorityQueue
+from time import sleep
+import sys
+######################################################
+#### A cell stores f(), g() and h() values
+#### A cell is either open or part of a wall
+######################################################
+class Cell:
+    #### Initially, floor cells have g() = inf and h() = 0
+    def __init__(self, x, y, is_wall=False):
+        self.x = x
+        self.y = y
+        self.is_wall = is_wall
+        self.g = float("inf")
+        self.h = 0
+        self.f = float("inf")
+        self.parent = []
+
+    #### Compare two cells based on their evaluation functions
+    def __lt__(self, other):
+        return self.f < other.f
+
+######################################################
+# A floor is a grid of size rows X cols
+######################################################
+class floorSet:
+    def __init__(self, root):
+        self.root = root
+        self.floor = floor
+
+        self.rows = len(floor)
+        self.cols = len(floor[0])
+
+        # below code: floor[x][y] == 1 means that self.is_wall=true
+        self.cells = [[Cell(x, y, floor[x][y] == 1) for y in range(self.cols)] for x in range(self.rows)]
+
+        #### The floor cell size in pixels
+        self.cell_size = 10
+        self.canvas = tk.Canvas(root, width=self.cols * self.cell_size, height=self.rows * self.cell_size, bg='white')
+        self.canvas.pack(side=tk.LEFT)
+
+        #### Call the defined function to draw the floor map
+        self.draw_floor()
+
+        #### Load the positions to direct the agent moving from one place to another
+        self.agent_pos = agent_pos
+        self.goal_pos = goal_pos
+        print("The robot is moving from", self.ward_name(self.agent_pos), "to", self.ward_name(self.goal_pos), "......")
+
+    ############################################################
+    #### This function is for getting the name of a medical department
+    #### from a coordinate
+    ############################################################
+    def ward_name(self, pos):
+        wards1 = {(22, 44): "ICU", (10, 44): "ER", (32, 40): "ONC",
+                    (22, 20): "BUR", (45, 45): "SUR", (4, 10): "MAT",
+                    (31, 24): "HEM", (44, 20): "PED", (44, 38): "MED",
+                  (13, 19): "GEN", (10, 48): "ADM", (46, 5): "ISO"}
+
+        return (wards1[pos])
+
+    ############################################################
+    #### This function is for drawing the floor map where each
+    #### department is labeled with a different color
+    ############################################################
+    def draw_floor(self):
+        color_list = ['white', 'gray', 'orange', 'plum3', 'khaki1', 'AquaMarine4', 'RosyBrown2', 'SteelBlue2',
+                      'DarkOrange2',
+                      'DarkSeaGreen1', 'yellow green', 'red', 'snow3', 'LightSkyBlue2']
+        for x in range(self.rows):
+            for y in range(self.cols):
+                for i in range(len(color_list)):
+                    if self.floor[x][y] == i:
+                        color = color_list[i]
+
+                self.canvas.create_rectangle(y * self.cell_size, x * self.cell_size, (y + 1) * self.cell_size,
+                                             (x + 1) * self.cell_size, fill=color)
+
+    ############################################################
+    #### Robot's movement uses Manhattan distance with this
+    #### heuristic function
+    ############################################################
+    def heuristic(self, pos):
+        return (abs(pos[0] - self.goal_pos[0]) + abs(pos[1] - self.goal_pos[1]))
+
+    ############################################################
+    #### A* Algorithm
+    ############################################################
+    def find_path(self):
+        open_set = PriorityQueue()
+
+        #### Start state's initial values for f(n) = g(n) + h(n)
+        self.cells[self.agent_pos[0]][self.agent_pos[1]].g = 0
+        self.cells[self.agent_pos[0]][self.agent_pos[1]].h = self.heuristic(self.agent_pos)
+        self.cells[self.agent_pos[0]][self.agent_pos[1]].f = self.heuristic(self.agent_pos)
+
+        #### Add the start state to the queue
+        open_set.put((0, self.agent_pos))
+
+        #### Continue exploring until the queue is exhausted
+        while not open_set.empty():
+            current_cost, current_pos = open_set.get()
+            current_cell = self.cells[current_pos[0]][current_pos[1]]
+
+            #### When a goal is reached, reconstruct the path from start to goal
+            #### and update the delivery status
+            if current_pos == self.goal_pos:
+                self.reconstruct_path()
+                sleep(10)
+                print("Successfully delivered medication to", self.ward_name(self.goal_pos), "!\n")
+                return self.goal_pos
+
+            #### Agent goes E, W, N, and S, whenever possible
+            for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                new_pos = (current_pos[0] + dx, current_pos[1] + dy)
+
+                if 0 <= new_pos[0] < self.rows and 0 <= new_pos[1] < self.cols and not self.cells[new_pos[0]][
+                    new_pos[1]].is_wall:
+
+                    #### The cost of moving to a new position is 1 unit
+                    new_g = current_cell.g + 1
+
+                    if new_g < self.cells[new_pos[0]][new_pos[1]].g:
+                        ### Update the path cost g()
+                        self.cells[new_pos[0]][new_pos[1]].g = new_g
+
+                        ### Update the heurstic h()
+                        self.cells[new_pos[0]][new_pos[1]].h = self.heuristic(new_pos)
+
+                        ### Update the evaluation function for the cell n: f(n) = g(n) + h(n)
+                        self.cells[new_pos[0]][new_pos[1]].f = (new_g + self.cells[new_pos[0]][new_pos[1]].h)
+                        self.cells[new_pos[0]][new_pos[1]].parent = current_cell
+
+                        #### Add the new cell to the priority queue
+                        open_set.put((self.cells[new_pos[0]][new_pos[1]].f, new_pos))
+
+    ############################################################
+    #### This function is for reconstructing the path
+    #### whenever a goal is reached
+    ############################################################
+    def reconstruct_path(self):
+        self.count = 0
+        current_cell = self.cells[self.goal_pos[0]][self.goal_pos[1]]
+        while current_cell.parent:
+            x, y = current_cell.x, current_cell.y
+            self.canvas.create_rectangle(y * self.cell_size, x * self.cell_size, (y + 1) * self.cell_size,
+                                         (x + 1) * self.cell_size, fill='blue', tags="agent")
+            current_cell = current_cell.parent
+
+            #### Count the number of steps in the path that the robot took
+            self.count += 1
+
+        #### Update the notification about the amount of time that the robot needs to reach the requested department
+        print("Estimated time:", int(self.count * 0.2), "minutes.")
+
+    ############################################################
+    #### This function is for tracing the path when needed
+    ############################################################
+    def move_agent(self, event):
+
+        #### Move right, if possible
+        if event.keysym == 'Right' and self.agent_pos[1] + 1 < self.cols and not self.cells[self.agent_pos[0]][
+            self.agent_pos[1] + 1].is_wall:
+            self.agent_pos = (self.agent_pos[0], self.agent_pos[1] + 1)
+
+        #### Move Left, if possible
+        elif event.keysym == 'Left' and self.agent_pos[1] - 1 >= 0 and not self.cells[self.agent_pos[0]][
+            self.agent_pos[1] - 1].is_wall:
+            self.agent_pos = (self.agent_pos[0], self.agent_pos[1] - 1)
+
+        #### Move Down, if possible
+        elif event.keysym == 'Down' and self.agent_pos[0] + 1 < self.rows and not self.cells[self.agent_pos[0] + 1][
+            self.agent_pos[1]].is_wall:
+            self.agent_pos = (self.agent_pos[0] + 1, self.agent_pos[1])
+
+        #### Move Up, if possible
+        elif event.keysym == 'Up' and self.agent_pos[0] - 1 >= 0 and not self.cells[self.agent_pos[0] - 1][
+            self.agent_pos[1]].is_wall:
+            self.agent_pos = (self.agent_pos[0] - 1, self.agent_pos[1])
+
+        #### Erase agent from the previous cell at time t
+        self.canvas.delete("agent")
+
+        ### Redraw the agent in the color navy in the new cell position at time t+1
+        self.canvas.create_rectangle(self.agent_pos[1] * self.cell_size, self.agent_pos[0] * self.cell_size,
+                                     (self.agent_pos[1] + 1) * self.cell_size, (self.agent_pos[0] + 1) * self.cell_size,
+                                     fill='navy', tags="agent")
+
+############################################################
+#### This function is used to read the request for delivery
+#### and sort the priority of the requested department
+############################################################
+def get_delivery_ward():
+    wards = {"ICU": (1, (22, 44)), "ER": (1, (10, 44)), "ONC": (1, (32, 40)),
+             "BUR": (1, (22, 20)), "SUR": (2, (45, 45)), "MAT": (2, (4, 10)),
+             "HEM": (3, (31, 24)), "PED": (3, (44, 20)), "MED": (4, (44, 38)),
+             "GEN": (4, (13, 19)), "ADM": (5, (10, 48)), "ISO": (5, (46, 5))}
+
+    #### Create a priority task list
+    task_list = PriorityQueue()
+
+    # Read the input file that contains requests of start and some delivery locations
+    with open('input.txt', 'r') as f:
+        for line in f:
+            line = f.read().splitlines()
+            l0 = line[0].replace("Start location:", "").split(",")
+            l1 = line[1].replace("Delivery locations:", "").split(",")
+
+            # If input of start location is wrong, check and correct the input
+            if l0[0] not in wards.keys():
+                print(l0[0], 'is not a department name. Check your input!\n')
+                break
+            start_pos = wards[l0[0]][1]  # pick out the start location
+
+    # If input of delivery location is wrong, check and correct the input
+    for w in l1:
+        if w not in wards.keys():
+            print(w, 'is not a department name. Check your input!\n')
+            break
+
+    # Put all delivery locations in priorityqueue
+    for w in l1:
+        task_list.put((wards[w][0], wards[w][1]))
+
+
+    #### Provide the start location and a list of requested departments
+    return start_pos, task_list
+
+############################################################
+#### This function is for transverting the coordinate position
+#### into the department name
+############################################################
+def get_ward_name(pos):
+    wards1 = {(22, 44): "ICU", (10, 44): "ER", (32, 40): "ONC",
+            (22, 20): "BUR", (45, 45): "SUR", (4, 10): "MAT",
+            (31, 24): "HEM", (44, 20): "PED", (44, 38): "MED",
+            (13, 19): "GEN", (10, 48): "ADM", (46, 5): "ISO"}
+    return (wards1[pos])
+
+############################################################
+#### Modify the wall cells to experiment with different floor
+#### configurations.
+############################################################
+floor = [
+[0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 12, 12, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 4, 4, 4, 0, 1, 12, 12, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 4, 4, 4, 0, 1, 12, 12, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 4, 4, 4, 0, 1, 12, 12, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11, 11, 11, 11, 11, 11, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 4, 4, 4, 0, 1, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11, 11, 11, 11, 11, 11, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11, 11, 11, 11, 11, 11, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 2, 2, 2, 2, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 2, 2, 2, 2, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 2, 2, 2, 2, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
+[1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+[1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 8, 8, 8, 8, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 8, 8, 8, 8, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 5, 5, 5, 5, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 10, 10, 10, 0, 1, 0, 6, 6, 6, 6, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 13, 13, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 10, 10, 10, 0, 1, 0, 6, 6, 6, 6, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 13, 13, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 0, 6, 6, 6, 6, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10, 10, 10, 0, 0, 0, 6, 6, 6, 6, 0, 1, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+]
+
+
+############################################################
+#### The main loop activates the GUI.
+############################################################
+
+sys.tracebacklimit = 0
+
+#### Get the list of delivery tasks including start location and many other delivery locations
+start_pos, task_list = get_delivery_ward()
+deliveried_list=[]
+unaccessed_list=[]
+
+#### Continue the delivery task until all requested departments are processed
+while not task_list.empty():
+    root = tk.Tk()
+    root.title("A* Robot Nurse")
+    agent_pos = start_pos
+    goal_pos = task_list.get()[1]
+
+    #### If the requested department is inaccessible, switch delivery to the next priority department
+    if goal_pos != floorSet(root).find_path():
+        unaccessed_list.append(goal_pos)
+        print("Robot can not access", floorSet(root).ward_name(goal_pos), ", need HELP!\n")
+        continue
+
+    #### Reset the start location
+    start_pos = goal_pos
+
+    #### Update the list of departments that have been delivered the medication
+    deliveried_list.append(goal_pos)
+
+    root.mainloop()
+
+#### Update the final notification
+print('----PERFORMANCE SUMMARY-----')
+if len(deliveried_list) != 0:
+    print("\nSUCCESSFULLY delivered: ")
+    for pos1 in deliveried_list:
+        print(get_ward_name(pos1),end= ' ')
+else:
+    print("\n No Successful delivery!")
+
+print("\n")
+
+if len(unaccessed_list) != 0:
+    print("\nFAILED to access:")
+    for pos2 in unaccessed_list:
+        print(get_ward_name(pos2), end= ' ')
+else:
+    print("\n No Failed delivery!")
+
+
