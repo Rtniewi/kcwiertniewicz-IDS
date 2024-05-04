@@ -1,0 +1,3 @@
+Enter the locations you want to deliver the medication:
+Start location:ADM
+Delivery locations:ER,BUR,ONC,SUR,HEM,GEN,ISO
