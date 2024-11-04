@@ -273,7 +273,7 @@ join film using (film_id)
 group by film.title)
 order by count(actor.actor_id);
 
--- query works prints movie with biggest cast
+-- query prints movie with biggest cast
 select film.title, count(actor.actor_id)
 from actor 
 join film_actor using (actor_id)
