@@ -123,22 +123,22 @@ BEGIN
 	begin_loop: LOOP
 		SET i = i + 1;
 
--- Step 1: Capture the start time with microsecond precision (6)
+-- Capture the start time with microsecond precision (6)
 		SET @start_time = NOW(6);
 
--- Step 2: Execute the prepared statement with the provided parameters
+-- Execute the prepared statement with the provided parameters
 		EXECUTE stmt;
     
--- Step 3: Capture the end time with microsecond precision
+-- Capture the end time with microsecond precision
 		SET @end_time = NOW(6);
 
--- Step 4: Calculate the difference in microseconds
+-- Calculate the difference in microseconds
 		SET execution_time_microseconds = TIMESTAMPDIFF(MICROSECOND, @start_time, @end_time);
     
--- Step 5: Total microseconds of 10 executions
+-- Total microseconds of 10 executions
 		SET total_execution_time_microseconds = total_execution_time_microseconds + execution_time_microseconds;
 		
--- SET @timing = execution_time_microseconds + x 
+-- Loop 10 times
 		IF i >= 10 THEN 
 			LEAVE begin_loop;
 		END IF;
